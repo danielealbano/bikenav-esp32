@@ -408,7 +408,7 @@ enum bmm150_intf {
  * @brief Bus communication function pointer which should be mapped to
  * the platform specific read and write functions of the user
  */
-typedef int8_t (*bmm150_com_fptr_t)(uint8_t dev_id, uint8_t reg_addr, uint8_t *read_data, uint16_t len);
+typedef int8_t (*bmm150_com_fptr_t)(uint8_t dev_id, uint8_t reg_addr, uint8_t *read_data, uint16_t len, void* cb_user_data);
 
 /*!	delay function pointer */
 typedef void (*bmm150_delay_fptr_t)(uint32_t);
@@ -561,6 +561,8 @@ struct bmm150_dev {
 	uint16_t int_status;
 	/*! Structure containing mag data */
 	struct bmm150_mag_data data;
+	/*! User data passed to the callbacks */
+	void* cb_user_data;
 };
 
 #endif /* BMM150_DEFS_H_ */

@@ -711,7 +711,7 @@
 /*****************************************************************************/
 /* type definitions */
 typedef int8_t (*bmi160_com_fptr_t)(uint8_t dev_addr, uint8_t reg_addr,
-		uint8_t *data, uint16_t len);
+		uint8_t *data, uint16_t len, void* user_data);
 
 typedef void (*bmi160_delay_fptr_t)(uint32_t period);
 
@@ -1459,6 +1459,8 @@ struct bmi160_dev {
 	bmi160_com_fptr_t write;
 	/*!  Delay function pointer */
 	bmi160_delay_fptr_t delay_ms;
+	/*! User data passed to the callbacks */
+	void* cb_user_data;
 };
 
 
