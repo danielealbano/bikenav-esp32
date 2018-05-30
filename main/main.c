@@ -229,21 +229,6 @@ void framebuffer_draw(void *pvParameters)
     }
 }
 
-#define GPIO_INPUT_IO_TRIGGER     0  // There is the Button on GPIO 0
-
-void app_sleep()
-{
-    esp_deep_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_AUTO);
-    gpio_pullup_en(GPIO_INPUT_IO_TRIGGER);        // use pullup on GPIO
-    gpio_pulldown_dis(GPIO_INPUT_IO_TRIGGER);     // not use pulldown on GPIO
-
-    esp_deep_sleep_enable_ext0_wakeup(GPIO_INPUT_IO_TRIGGER, 1); 
-                                          // Wake if GPIO is high
-
-    ESP_LOGI(TAG, "deep sleep");
-    esp_deep_sleep_start();
-}
-
 void app_loop(void *pvParameters)
 {
     spi_device_handle_t *spi = spi_global;
@@ -262,8 +247,6 @@ void app_loop(void *pvParameters)
             refreshes = refreshes_counter;
             refreshes_counter = 0;
             last_second_millis = now_millis;
-
-            app_sleep();
         }
     }
 }
