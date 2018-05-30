@@ -39,6 +39,9 @@ struct lcd
     };
 
     struct spi {
+        spi_device_handle_t device;
+        spi_device_interface_config_t *devcfg;
+        spi_bus_config_t *buscfg;
         spi_transaction_t transactions[];
         uint8_t transactions_count;
     };

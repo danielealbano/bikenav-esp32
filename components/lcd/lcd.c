@@ -12,15 +12,15 @@
 
 #define TAG "LCD"
 
-void lcd_cmd(spi_device_handle_t* spi, const uint8_t cmd)
+void lcd_cmd(lcd_t* lcd, const uint8_t cmd)
 {
     spi_transaction_t t;
 
-    lcd_spi_setup_transaction(&t, &cmd, 1, true);
+    lcd_spi_setup_transaction(lcd, &t, &cmd, 1, true);
     lcd_spi_send_transaction(lcd, &t);
 }
 
-void lcd_data(spi_device_handle_t* spi, const uint8_t *data, int data_len)
+void lcd_data(lcd_t* lcd, const uint8_t *data, int data_len)
 {
     spi_transaction_t t;
 
@@ -28,20 +28,20 @@ void lcd_data(spi_device_handle_t* spi, const uint8_t *data, int data_len)
         return;
     }
 
-    lcd_spi_setup_transaction(&t, data, data_len, true);
+    lcd_spi_setup_transaction(lcd, &t, data, data_len, true);
     lcd_spi_send_transaction(lcd, &t);
 }
 
-void lcd_spi_setup_transaction(spi_transaction_t* t, void* payload, int payload_length, bool is_data)
+void lcd_spi_setup_transaction(lcd_t *lcd, spi_transaction_t* t, void* payload, int payload_length, bool is_data)
 {
-    lcd_spi_setup_transaction_ex(t, payload, payload_length, is_data, 0);
+    lcd_spi_setup_transaction_ex(lcd, t, payload, payload_length, is_data, 0);
 }
 
-void lcd_spi_setup_transaction_ex(spi_transaction_t* t, void* payload, int payload_length, bool is_data, int flags)
+void lcd_spi_setup_transaction_ex(lcd_t *lcd, spi_transaction_t* t, void* payload, int payload_length, bool is_data, int flags)
 {
     memset(&t, 0, sizeof(t));
 
-    t->user = (void*)(is_data ? 1 : 0);
+    t->user = (void*)((lcd->pins->dc << 8) | (is_data ? 1 : 0));
     t->length = payload_length * 8;
     t->tx_buffer = payload;
     t->flags = flags;
@@ -55,9 +55,10 @@ void lcd_spi_send_transaction(lcd_t *lcd, spi_transaction_t* t)
 
 void lcd_spi_pre_transfer_callback(spi_transaction_t *t)
 {
-    lcd_t* lcd = (int)t->user >> 8;
-    int dc = (int)t->user & 0x01;
-    gpio_set_level(lcd->pins->dc, dc);
+    gpio_num_t dc_pin = (gpio_num_t)(t->user >> 8);
+    int dc_level = (int)(t->user & 0xFF);
+
+    gpio_set_level(dc_pin, dc_level);
 }
 
 void lcd_send_init_sequence(lcd_t *lcd)
@@ -152,12 +153,19 @@ void lcd_update_display(lcd_t *lcd)
 lcd_t* lcd_alloc(uint16_t width, uint16_t height, uint8_t bps)
 {
     lcd_t *lcd = (lcd_t*)malloc(sizeof(lcd_t));
+    memset(lcd, 0, sizeof(lcd_t));
 
     lcd->width = width;
     lcd->height = height;
     lcd->bps = bps;
-
     lcd->current_fb = NULL;
+
+    lcd->spi->device = NULL;
+    lcd->spi->buscfg = (spi_bus_config_t *)malloc(sizeof(spi_bus_config_t));
+    lcd->spi->devcfg = (spi_device_interface_config_t *)malloc(sizeof(spi_device_interface_config_t));
+
+    memset(buscfg, 0, sizeof(spi_bus_config_t));
+    memset(devcfg, 0, sizeof(spi_device_interface_config_t));
 
     return lcd;
 }
@@ -180,6 +188,30 @@ void lcd_init_pins(lcd_t *lcd, gpio_num_t miso, gpio_num_t clk, gpio_num_t cs, g
 void lcd_free(lcd_t* lcd)
 {
     free(lcd);
+}
+
+void lcd_setup_spi(lcd_t *lcd)
+{
+    esp_err_t ret;
+
+    buscfg->miso_io_num = PIN_NUM_MISO;
+    buscfg->mosi_io_num = PIN_NUM_MOSI;
+    buscfg->sclk_io_num = PIN_NUM_CLK;
+    buscfg->quadwp_io_num = -1;
+    buscfg->quadhd_io_num = -1;
+    buscfg->max_transfer_sz = (lcd->width * lcd->height * lcd->bps) + 50;
+
+    devcfg->clock_speed_hz = 40 * 1000 * 1000;
+    devcfg->mode = 0;
+    devcfg->spics_io_num = PIN_NUM_CS;
+    devcfg->queue_size = 10;
+    devcfg->pre_cb = lcd_spi_pre_transfer_callback;
+
+    ret = spi_bus_initialize(HSPI_HOST, lcd->spi->buscfg, 1);
+    ESP_ERROR_CHECK(ret);
+
+    ret = spi_bus_add_device(HSPI_HOST, lcd->spi->devcfg, &lcd->spi->device);
+    ESP_ERROR_CHECK(ret);
 }
 
 void lcd_setup(lcd_t *lcd)

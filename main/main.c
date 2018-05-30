@@ -42,18 +42,9 @@ struct bmi160_dev sensor_bmi160;
 struct bmm150_dev sensor_bmm150;
 float accel_scale, gyro_range;
 
-uint16_t **framebuffer;
-graphics_t *graphics;
-font_t *font6x8;
-font_t *font6x10;
-font_t *font7x12;
-
 int fps = 0;
 int frame = 0;
 int refreshes = 0;
-spi_device_handle_t *spi_global;
-
-RTC_DATA_ATTR uint8_t from_deep_sleep;
 
 inline static int millis()
 {
@@ -248,36 +239,6 @@ void app_loop(void *pvParameters)
     }
 }
 
-void setup_spi(spi_device_handle_t * spi)
-{
-    esp_err_t ret;
-
-    spi_bus_config_t *buscfg = (spi_bus_config_t *)malloc(sizeof(spi_bus_config_t));
-    memset(buscfg, 0, sizeof(spi_bus_config_t));
-
-    spi_device_interface_config_t *devcfg = (spi_device_interface_config_t *)malloc(sizeof(spi_device_interface_config_t));
-    memset(devcfg, 0, sizeof(spi_device_interface_config_t));
-
-    buscfg->miso_io_num = PIN_NUM_MISO;
-    buscfg->mosi_io_num = PIN_NUM_MOSI;
-    buscfg->sclk_io_num = PIN_NUM_CLK;
-    buscfg->quadwp_io_num = -1;
-    buscfg->quadhd_io_num = -1;
-    buscfg->max_transfer_sz = 160 * 128 * 2 + 20;
-
-    devcfg->clock_speed_hz = 40 * 1000 * 1000;
-    devcfg->mode = 0;
-    devcfg->spics_io_num = PIN_NUM_CS;
-    devcfg->queue_size = 10;
-    devcfg->pre_cb = lcd_spi_pre_transfer_callback;
-
-    ret = spi_bus_initialize(HSPI_HOST, buscfg, 1);
-    ESP_ERROR_CHECK(ret);
-
-    ret = spi_bus_add_device(HSPI_HOST, devcfg, spi);
-    ESP_ERROR_CHECK(ret);
-}
-
 void setup_display(spi_device_handle_t * spi)
 {
     lcd_init(spi);
@@ -455,28 +416,16 @@ void setup_bmm150()
     }
 }
 
-
 void app_main()
 {
-    spi_device_handle_t *spi = (spi_device_handle_t *)malloc(sizeof(spi_device_handle_t));
-    memset(spi, 0, sizeof(spi_device_handle_t));
-
-    esp_wifi_set_mode(WIFI_MODE_NULL);
-    //esp_bt_controller_disable();
-
     setup_bmi160();
     setup_bmm150();
-    setup_spi(spi);
-    setup_display(spi);
     setup_graphics();
+    setup_display();
 
     ESP_LOGI(TAG, "Free memory after init: %d", (int)heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
 
-    spi_global = spi;
-
     app_loop((void*)NULL);
-
-    from_deep_sleep = 1;
 
     /*
     xTaskCreatePinnedToCore(update_display, "update display", 4096, NULL, 3, NULL, 0);
