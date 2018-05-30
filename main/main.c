@@ -16,12 +16,9 @@
 #include "driver/i2c.h"
 #include "soc/gpio_struct.h"
 
-#include "graphics.h"
-#include "font.h"
+#include "ug.h"
+#include "ug_fonts.h"
 #include "lcd.h"
-#include "font6x8.h"
-#include "font6x10.h"
-#include "font7x12.h"
 
 #include "bmi160.h"
 #include "bmi160_defs.h"
