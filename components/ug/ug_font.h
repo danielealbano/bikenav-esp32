@@ -1,10 +1,6 @@
 #ifndef __UG_FONT_H__
 #define __UG_FONT_H__
 
-#include "ug_font_6x8.h"
-#include "ug_font_6x10.h"
-#include "ug_font_7x12.h"
-
 typedef struct graphics graphics_t;
 typedef struct font font_t;
 

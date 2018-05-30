@@ -1,28 +1,11 @@
 #include <stdlib.h>
-#include "font.h"
-#include "graphics.h"
+#include "ug.h"
+#include "ug_font.h"
 
-font_t *font_init(int char_width, int char_height, const unsigned char *pixels)
+void ug_font_draw_char(font_t *f, graphics_t *g, int x, int y, char ch, int front_color, int back_color)
 {
-    font_t *f = (font_t *)malloc(sizeof(font_t));
-
-    f->char_width = char_width;
-    f->char_height = char_height;
-    f->pixels = pixels;
-
-    return f;
-}
-
-void font_free(font_t *f)
-{
-    free(f);
-}
-
-void font_draw_char(font_t *f, graphics_t *g, int x, int y, char ch, int front_color, int back_color)
-{
-    int i,j,k,xo,yo,c,bn;
+    int i,j,k,c,bn;
     uint8_t b, bt;
-    unsigned char* p;
     ug_point p;
 
     bt = (uint8_t)ch;
@@ -39,49 +22,33 @@ void font_draw_char(font_t *f, graphics_t *g, int x, int y, char ch, int front_c
         case 0xB0: bt = 0xF8; break; // °
     }
     
-    yo = y;
-    bn = f->char_width;
-    if (!bn) {
-        return;
-    }
-
-    bn >>= 3;
-    if (f->char_width % 8) {
-        bn++;
-    }
-
-    p = f->pixels;
-    p += bt * f->char_height * bn;
+    p.y = y;
 
     for (j = 0; j < f->char_height; j++) {
-        xo = x;
+        p.x = x;
         c = f->char_width;
         for (i = 0; i < bn; i++) {
             b = *p++;
-            for (k=0; (k<8) && c; k++) {
-                ug_point.x = xo;
-                ug_point.y = yo;
-                
+            for (k=0; (k < 8) && c; k++) {
                 if (b & 0x01) {
-                    ug_point(g, xo, yo, front_color);
+                    ug_point(g, p, front_color);
                 } else if (back_color >= 0) {
-                    ug_point(g, xo, yo, back_color);
+                    ug_point(g, p, back_color);
                 }
 
                 b >>= 1;
-                xo++;
                 c--;
             }
         }
 
-        yo++;
+        p.y++;
     }
 }
 
-void font_print_string(font_t *f, graphics_t *g, char *str)
+void ug_font_print_string(font_t *f, graphics_t *g, char *str)
 {
     while (*str) {
-        font_draw_char(
+        ug_font_draw_char(
             g->font, 
             g, 
             g->cursor_x, 
@@ -100,12 +67,12 @@ void font_print_string(font_t *f, graphics_t *g, char *str)
     }
 }
 
-void font_print_number(font_t *f, graphics_t *g, int number)
+void ug_font_print_number(font_t *f, graphics_t *g, int number)
 {
-    font_print_number_ex(f, g, number, 10, 0);
+    ug_font_print_number_ex(f, g, number, 10, 0);
 }
 
-void font_print_number_ex(font_t *f, graphics_t *g, int number, int base, int min_characters)
+void ug_font_print_number_ex(font_t *f, graphics_t *g, int number, int base, int min_characters)
 {
     const char baseChars[] = "0123456789ABCDEF";
     bool sign = number < 0;
@@ -127,5 +94,5 @@ void font_print_number_ex(font_t *f, graphics_t *g, int number, int base, int mi
         temp[i] = ' ';
     }
 
-    font_print_string(g, &temp[i + 1]);
+    ug_font_print_string(g, &temp[i + 1]);
 }
