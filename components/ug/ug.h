@@ -39,7 +39,7 @@ typedef struct ug_style_border ug_style_border_t;
 typedef struct ug_style_fill ug_style_fill_t;
 
 struct ug {
-    uint16_t *framebuffers[];
+    uint16_t *framebuffers_queue[];
     uint8_t framebuffers_count;
     int pitch;
     ug_size_t size

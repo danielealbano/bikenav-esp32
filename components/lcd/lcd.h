@@ -18,11 +18,10 @@
 #define PIN_NUM_DC      26
 #define PIN_NUM_RST     33
 
-
 typedef struct lcd lcd_t;
 typedef struct lcd_init_cmd lcd_init_cmd_t;
-
-
+typedef void (*lcd_acquire_fb_cb_t)(lcd_t *lcd);
+typedef void (*lcd_release_fb_cb_t)(lcd_t *lcd, void* fb);
 
 struct lcd
 {
@@ -30,29 +29,29 @@ struct lcd
     uint16_t height;
     uint8_t bps;
 
-    struct pins {
+    struct {
         gpio_num_t miso;
         gpio_num_t clk;
         gpio_num_t cs;
         gpio_num_t dc;
         gpio_num_t rst;
-    };
+    } pins;
 
-    struct spi {
+    struct {
         spi_device_handle_t device;
         spi_device_interface_config_t *devcfg;
         spi_bus_config_t *buscfg;
-        spi_transaction_t transactions[];
         uint8_t transactions_count;
-    };
-} lcd_init_cmd_t;
+        spi_transaction_t transactions[];
+    } spi;
+};
 
 struct lcd_init_cmd
 {
     uint8_t cmd;
     uint8_t data[16];
     uint8_t databytes;
-} lcd_init_cmd_t;
+};
 
 #if defined(DISPLAY_ILI)
 DRAM_ATTR static const lcd_init_cmd_t lcd_init_cmds[] = {

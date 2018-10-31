@@ -138,18 +138,6 @@ void lcd_send_lines_seps525(lcd_t* lcd)
     lcd_spi_transactions_queue(lcd, t, t_i);
 }
 
-void lcd_update_display(lcd_t *lcd)
-{
-    lcd_spi_transactions_wait(lcd);
-
-    if (lcd->current_fb && lcd->release_fb_cb) {
-        lcd->release_fb_cb(lcd);
-    }
-    lcd->current_fb = lcd->acquire_fb_cb(lcd);
-
-    lcd_send_lines(lcd);
-}
-
 lcd_t* lcd_alloc(uint16_t width, uint16_t height, uint8_t bps)
 {
     lcd_t *lcd = (lcd_t*)malloc(sizeof(lcd_t));
@@ -164,18 +152,11 @@ lcd_t* lcd_alloc(uint16_t width, uint16_t height, uint8_t bps)
     lcd->spi->buscfg = (spi_bus_config_t *)malloc(sizeof(spi_bus_config_t));
     lcd->spi->devcfg = (spi_device_interface_config_t *)malloc(sizeof(spi_device_interface_config_t));
 
-    memset(buscfg, 0, sizeof(spi_bus_config_t));
-    memset(devcfg, 0, sizeof(spi_device_interface_config_t));
+    memset(lcd->spi->buscfg, 0, sizeof(spi_bus_config_t));
+    memset(lcd->spi->devcfg, 0, sizeof(spi_device_interface_config_t));
 
     return lcd;
 }
-
-void lcd_init_cb(lcd_t *lcd, lcd_acquire_fb_cb_t* acquire_fb_cb, lcd_release_fb_cb_t* release_fb_cb)
-{
-    lcd->acquire_fb_cb = acquire_fb_cb;
-    lcd->release_fb_cb = release_fb_cb; 
-}
-
 void lcd_init_pins(lcd_t *lcd, gpio_num_t miso, gpio_num_t clk, gpio_num_t cs, gpio_num_t dc, gpio_num_t rst)
 {
     lcd->pins.miso = miso;
@@ -194,24 +175,26 @@ void lcd_setup_spi(lcd_t *lcd)
 {
     esp_err_t ret;
 
-    buscfg->miso_io_num = PIN_NUM_MISO;
-    buscfg->mosi_io_num = PIN_NUM_MOSI;
-    buscfg->sclk_io_num = PIN_NUM_CLK;
-    buscfg->quadwp_io_num = -1;
-    buscfg->quadhd_io_num = -1;
-    buscfg->max_transfer_sz = (lcd->width * lcd->height * lcd->bps) + 50;
+    lcd->spi->buscfg->miso_io_num = PIN_NUM_MISO;
+    lcd->spi->buscfg->mosi_io_num = PIN_NUM_MOSI;
+    lcd->spi->buscfg->sclk_io_num = PIN_NUM_CLK;
+    lcd->spi->buscfg->quadwp_io_num = -1;
+    lcd->spi->buscfg->quadhd_io_num = -1;
+    lcd->spi->buscfg->max_transfer_sz = (lcd->width * lcd->height * lcd->bps) + 50;
 
-    devcfg->clock_speed_hz = 40 * 1000 * 1000;
-    devcfg->mode = 0;
-    devcfg->spics_io_num = PIN_NUM_CS;
-    devcfg->queue_size = 10;
-    devcfg->pre_cb = lcd_spi_pre_transfer_callback;
+    lcd->spi->devcfg->clock_speed_hz = 40 * 1000 * 1000;
+    lcd->spi->devcfg->mode = 0;
+    lcd->spi->devcfg->spics_io_num = PIN_NUM_CS;
+    lcd->spi->devcfg->queue_size = 10;
+    lcd->spi->devcfg->pre_cb = lcd_spi_pre_transfer_callback;
 
     ret = spi_bus_initialize(HSPI_HOST, lcd->spi->buscfg, 1);
     ESP_ERROR_CHECK(ret);
 
     ret = spi_bus_add_device(HSPI_HOST, lcd->spi->devcfg, &lcd->spi->device);
     ESP_ERROR_CHECK(ret);
+
+    lcd_init_pins(lcd, PIN_NUM_MISO, )
 }
 
 void lcd_setup(lcd_t *lcd)

@@ -8,9 +8,11 @@
 #include "esp_system.h"
 
 #include "imu.h"
+#include "lcd.h"
 
 #define TAG "MAIN"
 
+lcd_t *lcd;
 imu_t *imu;
 
 #define BMI160_SENSOR_RANGE 65535.0f
@@ -67,19 +69,19 @@ void app_loop()
     }
 }
 
-/*
 void setup_display()
 {
+    lcd = lcd_alloc(160,128, 16)
+    lcd_init_cb(lcd, my_acquire_fb_cb, my_release_fb_cb)
+    lcd_init_pins(lcd, )
 }
-*/
 
-/*
 void setup_graphics()
 {
-    ug = ug_alloc(160, 128, UG_COLOR_RGB565);
-    ug_set_background_color(ug, UG_COLOR_BLACK);
+    //ug = ug_alloc(160, 128, UG_COLOR_RGB565);
+    //ug_set_background_color(ug, UG_COLOR_BLACK);
 }
-*/
+
 void setup_imu()
 {
     imu = imu_alloc(
@@ -88,15 +90,15 @@ void setup_imu()
         21,
         22,
         I2C_NUM_0,
-        4 * 100000
+        100000
     );
 }
 
 void app_main()
 {
     setup_imu();
-    //setup_graphics();
-    //setup_display();
+    setup_graphics();
+    setup_display();
 
     ESP_LOGI(TAG, "Free memory after init: %d", (int)heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
 
